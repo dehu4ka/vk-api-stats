@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Cameras — RT Camera Monitor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Cameras <span class="badge bg-secondary fs-6">{{ total }}</span></h3>
+</div>
+
+<div class="card stat-card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="name, address, SN, UID..." value="{{ q }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="online" {% if status == 'online' %}selected{% endif %}>Online</option>
+                    <option value="offline" {% if status == 'offline' %}selected{% endif %}>Offline</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Vendor</label>
+                <select name="vendor" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for v in vendors %}
+                    <option value="{{ v }}" {% if vendor == v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Data Center</label>
+                <select name="dc" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for d in dcs %}
+                    <option value="{{ d }}" {% if dc == d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="/cameras" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card stat-card">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Vendor</th>
+                    <th>Model</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Offline Since</th>
+                    <th>Data Center</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for cam in cameras %}
+                <tr>
+                    <td>
+                        <a href="/cameras/{{ cam.uid }}" class="text-decoration-none fw-medium">
+                            {{ cam.name or cam.uid[:12] }}
+                        </a>
+                    </td>
+                    <td><small>{{ cam.vendor or '-' }}</small></td>
+                    <td><small class="text-muted">{{ cam.model or '-' }}</small></td>
+                    <td><small class="text-muted">{{ cam.address or '-' }}</small></td>
+                    <td>
+                        {% if cam.is_online %}
+                            <span class="badge badge-online">Online</span>
+                        {% else %}
+                            <span class="badge badge-offline">Offline</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not cam.is_online and cam.offline_since %}
+                            <small class="text-danger">{{ format_duration(now - cam.offline_since) }}</small>
+                        {% else %}
+                            <small class="text-muted">-</small>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ (cam.data_center or {}).get('name', '-') }}</small></td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No cameras found</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="card-footer bg-white border-top">
+        <nav>
+            <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page - 1 }}&q={{ q }}&status={{ status }}&vendor={{ vendor }}&dc={{ dc }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% set start_page = [1, page - 3] | max %}
+                {% set end_page = [total_pages, page + 3] | min %}
+
+                {% if start_page > 1 %}
+                <li class="page-item"><a class="page-link" href="?page=1&q={{ q }}&status={{ status }}&vendor={{ vendor }}&dc={{ dc }}">1</a></li>
+                {% if start_page > 2 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+                {% endif %}
+
+                {% for p in range(start_page, end_page + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}&q={{ q }}&status={{ status }}&vendor={{ vendor }}&dc={{ dc }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+
+                {% if end_page < total_pages %}
+                {% if end_page < total_pages - 1 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+                <li class="page-item"><a class="page-link" href="?page={{ total_pages }}&q={{ q }}&status={{ status }}&vendor={{ vendor }}&dc={{ dc }}">{{ total_pages }}</a></li>
+                {% endif %}
+
+                {% if page < total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page + 1 }}&q={{ q }}&status={{ status }}&vendor={{ vendor }}&dc={{ dc }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-camera-video text-primary fs-4 me-2"></i>
+                    <span class="text-muted">Всего камер</span>
+                </div>
+                <div class="stat-value">{{ summary.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100 border-start border-success border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+                    <span class="text-muted">Online</span>
+                </div>
+                <div class="stat-value text-success">{{ summary.online }}</div>
+                <small class="text-muted">{{ summary.online_pct }}%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100 border-start border-danger border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-x-circle text-danger fs-4 me-2"></i>
+                    <span class="text-muted">Offline</span>
+                </div>
+                <div class="stat-value text-danger">{{ summary.offline }}</div>
+                <small class="text-muted">{{ summary.offline_pct }}%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-heart-pulse fs-4 me-2 {% if health.status == 'up' %}text-success{% else %}text-danger{% endif %}"></i>
+                    <span class="text-muted">API</span>
+                </div>
+                <div class="stat-value {% if health.status == 'up' %}text-success{% else %}text-danger{% endif %}">
+                    {{ health.status | upper }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

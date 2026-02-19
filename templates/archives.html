@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Archives — RT Camera Monitor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Archives</h3>
+</div>
+
+<div class="card stat-card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="NEW" {% if status_filter == 'NEW' %}selected{% endif %}>NEW</option>
+                    <option value="ENQUEUED" {% if status_filter == 'ENQUEUED' %}selected{% endif %}>ENQUEUED</option>
+                    <option value="ERROR" {% if status_filter == 'ERROR' %}selected{% endif %}>ERROR</option>
+                    <option value="DONE" {% if status_filter == 'DONE' %}selected{% endif %}>DONE</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="/archives" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card stat-card">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Cameras</th>
+                    <th>Length</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for arc in archives %}
+                {% set status_text = STATUS_LABELS.get(arc.status, '?') %}
+                <tr>
+                    <td><small class="text-muted">#{{ arc.id }}</small></td>
+                    <td>{{ arc.name or '-' }}</td>
+                    <td>
+                        {% if status_text == 'DONE' %}
+                            <span class="badge badge-done">DONE</span>
+                        {% elif status_text == 'ERROR' %}
+                            <span class="badge badge-error">ERROR</span>
+                        {% elif status_text == 'ENQUEUED' %}
+                            <span class="badge badge-enqueued">ENQUEUED</span>
+                        {% else %}
+                            <span class="badge badge-new">{{ status_text }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ arc.camera_count or 0 }}</td>
+                    <td>{{ arc.length or 0 }} min</td>
+                    <td>
+                        {% if arc.created_at %}
+                            <small class="text-muted">
+                                {{ arc.created_at | int }}
+                            </small>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No archives found</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card-footer bg-white border-top">
+        <nav>
+            <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page - 1 }}&status={{ status_filter }}">
+                        <i class="bi bi-chevron-left"></i> Prev
+                    </a>
+                </li>
+                {% endif %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page }}</span>
+                </li>
+                {% if has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page + 1 }}&status={{ status_filter }}">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}

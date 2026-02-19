@@ -1,0 +1,1162 @@
+swagger: "2.0"
+info:
+  version: 16.0.0
+  title: VCFront
+  description: Описание API бекенда Видеонаблюдения Ростелеком
+basePath: /api
+schemes:
+- https
+consumes:
+- application/json
+produces:
+- application/json
+tags: []
+securityDefinitions:
+  authorization_header:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: Аутентификационный токен (формат "Bearer token=<значение токена>, api_key=<значение ключа к апи>", также может быть установлено что-то одно - token или api_key)
+paths:
+  /v1/user/sessions.json:
+    get:
+      operationId: userSessionsIndex
+      summary: Список сессий (выданных токенов)
+      security:
+      - authorization_header: []
+      responses:
+        200:
+          description: Сессии
+          schema:
+            $ref: '#/definitions/userSessionsIndexResponse'
+          examples:
+            application/json:
+              status: ok
+              sessions:
+              - id: 1053402462
+                token: fc949c9b39df8457feca225408aeac75b2c8e90ddb98e7a4c3ccd2365c679b04
+                device_name: iphone
+                created_at: 1444296211.654286
+  /v1/user/sessions/{session_id}.json:
+    delete:
+      operationId: userSessionsDelete
+      summary: Выход пользователя (закрытие сессии и удаление сессионного токена)
+      security:
+      - authorization_header: []
+      parameters:
+      - name: session_id
+        type: integer
+        format: int32
+        required: true
+        description: Id сессии
+        in: path
+      responses:
+        200:
+          description: Успех
+          examples:
+            application/json:
+              status: ok
+          schema:
+            $ref: '#/definitions/response_ok'
+  /v1/user/profile.json:
+    get:
+      operationId: userProfileGet
+      summary: Получение профайла/параметров пользователя
+      security:
+      - authorization_header: []
+      responses:
+        200:
+          description: Успех
+          schema:
+            $ref: '#/definitions/userProfileGetResponse'
+  /v1/user/cameras/{camera_uid}/estore_fragments.json:
+    get:
+      operationId: userCamerasEstoreFragmentsGet
+      summary: Получение интервалов записанного видео
+      description: Получение интервалов записанного видео
+      security:
+      - authorization_header: []
+      parameters:
+      - name: camera_uid
+        type: string
+        required: true
+        description: uid камеры
+        in: path
+      - name: since
+        type: integer
+        format: int64
+        required: true
+        description: Время от (timestamp)
+        in: query
+      - name: till
+        type: integer
+        format: int64
+        required: true
+        description: Время до (timestamp)
+        in: query
+      responses:
+        200:
+          description: Фрагменты
+          schema:
+            $ref: '#/definitions/response_cameras_fragments_get'
+          examples:
+            application/json:
+              status: ok
+              fragments:
+              - since: 1442928374.4
+                till: 1442930399.2
+              - since: 1442930402.8
+                till: 1443070799.2666667
+  /v1/user/cameras/{camera_uid}/time.json:
+    get:
+      operationId: userCamerasTimeSettingsGet
+      summary: Получение настроек часового пояса камеры
+      security:
+      - authorization_header: []
+      parameters:
+      - name: camera_uid
+        type: string
+        required: true
+        description: UID камеры
+        in: path
+      responses:
+        200:
+          description: Успех
+          schema:
+            $ref: '#/definitions/userCamerasTimeSettingsGetResponse'
+        422:
+          description: Ошибка
+          schema:
+            $ref: '#/definitions/response_err'
+  /v1/user/baked_archives.json:
+    get:
+      operationId: userBakedArchivesIndex
+      summary: Получить список выпекаемых архивов
+      security:
+      - authorization_header: []
+      parameters:
+      - name: camera_uids
+        type: array
+        items:
+          type: string
+        collectionFormat: csv
+        description: список uid камер через запятую
+        in: query
+      - name: name
+        type: string
+        description: имя архива (точное совпадение)
+        in: query
+      - name: since
+        type: number
+        format: double
+        description: начало интервала
+        in: query
+      - name: till
+        type: number
+        format: double
+        description: окончание интервала
+        in: query
+      - name: offset
+        type: integer
+        format: int32
+        description: пагинация, смещение
+        in: query
+      - name: limit
+        type: integer
+        format: int32
+        description: пагинация, количество
+        in: query
+      - name: sort_column
+        type: string
+        enum:
+        - updated_at
+        - name
+        - camera_count
+        - since
+        - status
+        description: Колонка для сортировки (по-умолчанию - updated_at)
+        default: updated_at
+        in: query
+      - name: sort_order
+        type: string
+        enum:
+        - asc
+        - desc
+        description: Направление сортировки (по-умолчанию - по убыванию)
+        default: desc
+        in: query
+      responses:
+        200:
+          description: Успех
+          schema:
+            $ref: '#/definitions/userBakedArchivesIndexResponse'
+  /v1/health.json:
+    get:
+      operationId: healthGet
+      summary: Статус работы Сервиса
+      responses:
+        200:
+          description: Успех
+          schema:
+            $ref: '#/definitions/serviceHealthResponse'
+  /v1/user/cameras/attach.json:
+    post:
+      operationId: userCamerasAttach
+      summary: Прикрепить камеру к пользователю
+      description: Закрепляет камеру за пользователем.
+      security:
+      - authorization_header: []
+      parameters:
+      - name: body
+        required: true
+        in: body
+        schema:
+          $ref: '#/definitions/userCamerasAttachParams'
+      responses:
+        200:
+          description: Успех
+          schema:
+            $ref: '#/definitions/userCamerasAttachResponse'
+        422:
+          description: Ошибка
+          schema:
+            $ref: '#/definitions/ErrorWithData'
+          examples:
+            application/json:
+              status: error
+              messages:
+              - base: Error
+              data:
+                camera_uid:
+                - 12345678-1234-1234-1234-1234567890ab
+  /v1/user/extra_tariffs.json:
+    get:
+      operationId: userExtraTariffsIndex
+      summary: Общая информация о тарифах на дополнительные услуги
+      security:
+      - authorization_header: []
+      responses:
+        200:
+          description: Успех
+          schema:
+            $ref: '#/definitions/userExtraTariffsIndexResponse'
+  /v3/user/cameras.json:
+    get:
+      operationId: userCamerasIndexV3
+      description: Список камер привязанных к аккаунту.
+      summary: Получить список доступных камер
+      security:
+      - authorization_header: []
+      parameters:
+      - name: camera_uids
+        in: query
+        type: array
+        items:
+          type: string
+        collectionFormat: csv
+        description: UID камер
+      - name: dvr_ids
+        in: query
+        type: array
+        items:
+          type: integer
+          format: int64
+        collectionFormat: csv
+        description: ID регистратора
+      - name: page
+        in: query
+        type: integer
+        format: int32
+        minimum: 1
+        description: пагинация, номер страницы
+      - name: per_page
+        in: query
+        type: integer
+        format: int32
+        maximum: 1000
+        description: пагинация, размер страницы
+      responses:
+        200:
+          description: Камеры
+          schema:
+            $ref: '#/definitions/userCamerasIndexV3Response'
+  /v2/vc/sso_sessions.json:
+    post:
+      operationId: v2VcSessionsSsoCreate
+      summary: OAuth аутентификация пользователя через Ростелеком.Паспорт (создание сессии и получение сессионного токена)
+      parameters:
+      - name: body
+        required: true
+        in: body
+        schema:
+          $ref: '#/definitions/v2vcSessionsSsoCreateParams'
+      responses:
+        200:
+          description: Сессия
+          schema:
+            $ref: '#/definitions/response_session'
+        422:
+          description: Ошибка
+          schema:
+            $ref: '#/definitions/response_err'
+definitions:
+  v2vcSessionsSsoCreateParams:
+    type: object
+    required:
+    - email
+    - password
+    - device_name
+    - sso_name
+    properties:
+      email:
+        type: string
+        description: Логин\E-mail учетной записи SSO
+      password:
+        type: string
+        description: Пароль
+        minLength: 6
+        maxLength: 72
+      device_name:
+        type: string
+        description: Название устройства
+      sso_name:
+        $ref: '#/definitions/SsoName'
+  userCamerasAttachParams:
+    type: object
+    properties:
+      sn:
+        type: string
+        example: 465003129
+        description: Серийный номер камеры при регистрации по нему
+      mac:
+        type: string
+        description: MAC-адрес при регистрации по нему
+      reg_hash:
+        type: string
+        description: Регистрационный хэш при регистрации по QR-коду
+      camera_category_id:
+        type: integer
+        format: int32
+        description: ID идентификатора принадлежности камеры
+      offset:
+        type: integer
+        format: int32
+        description: Смещение таймзоны пользователя в минутах
+        example: 180
+      camera_group_id:
+        type: integer
+        format: int32
+        description: ID группы камер
+  userCamerasAttachResponse:
+    type: object
+    properties:
+      camera:
+        type: object
+        description: Данные о прикреплённой камере; null если камера не найдена
+        properties:
+          uid:
+            type: string
+            description: UID камеры
+  CameraIndexShare:
+    type: object
+    properties:
+      owner:
+        $ref: '#/definitions/CameraShareUser'
+  CameraLocation:
+    type: object
+    properties:
+      lat:
+        type: string
+        example: 55.7522
+      lng:
+        type: string
+        example: 37.6156
+  CameraV3:
+    type: object
+    properties:
+      uid:
+        type: string
+        example: 29fef31e-a9f6-486b-81e4-b2ea842a01db
+      kind:
+        type: string
+        enum:
+        - violet
+        - rose
+        example: violet
+        description: (Тип камеры)[./cameras/camera_types.md], violet = SPIF-камера, rose = RTSP-камера
+      sn:
+        type: string
+        example: 465003129
+        description: Серийный номер камеры
+      ip:
+        type: string
+        example: 10.50.4.179
+        description: IP камеры
+      name:
+        type: string
+        example: Томская камера 2
+        description: Наименование камеры
+      mac:
+        type: string
+        example: c4:2f:90:46:51:f1
+        description: MAC-адрес камеры
+      model:
+        type: string
+        example: DS-2CD2432F-IW
+        description: Модель камеры
+      vendor:
+        type: string
+        example: HikVision
+        description: Производитель камеры
+      agent_version:
+        type: string
+        example: 201509291201
+        description: Версия agent-green
+      firmware_version:
+        type: string
+        example: V5.3.0OP build 150708
+        description: Версия прошивки
+      is_online:
+        type: boolean
+        description: Камера работает (да/нет)
+      dvr_id:
+        type: integer
+        format: int64
+        description: ID DVR
+      dvr_camera_id:
+        type: integer
+        format: int32
+        description: ID камеры на DVR
+      platform:
+        type: object
+        properties:
+          name:
+            type: string
+          vendor:
+            type: string
+            example: HikVision
+        description: Платформа, null если это RTSP-камера.
+        example:
+          name: r0
+          vendor: HikVision
+      registered_at:
+        type: number
+        format: double
+        example: 1443523689.645675
+        description: Таймстемп даты регистрации камеры
+      utc_offset:
+        type: integer
+        format: int32
+        description: Смещение времени на камере в минутах
+        example: 180
+      offline_since:
+        type: number
+        format: double
+        description: Время, с которого камера не в сети
+        example: 1443524000
+      is_alive:
+        type: boolean
+        description: Живость канала
+      alive_since:
+        type: number
+        format: double
+        description: Дата оживления канала
+      dead_since:
+        type: number
+        format: double
+        description: Дата смерти канала
+      memory_card_state:
+        description: Свойства карты памяти
+        $ref: '#/definitions/CameraMemoryCardState'
+      scheduled_state:
+        type: object
+        description: Свойства работы по расписанию
+        example:
+          transmission: enabled
+          transmission_updated_at: 2018-01-01T00:00:00Z
+      rtsp_url:
+        type: string
+        example: rtsp://admin:admin54321@172.16.1.80/
+        description: Адрес RTSP-видеопотока (null для violet-камер)
+      channels:
+        type: array
+        items:
+          $ref: '#/definitions/CameraChannel'
+        description: >
+          Каналы камеры. Гарантирован как минимум один канал.
+      address:
+        type: string
+        description: Адрес
+      is_published:
+        type: boolean
+        example: true
+      is_ondemand_live:
+        type: boolean
+        example: true
+      alarm_sender_enabled:
+        type: boolean
+        example: true
+      camera_move_detection_enabled:
+        type: boolean
+        example: true
+      license_plate_detection_enabled:
+        type: boolean
+        example: true
+      face_detection_enabled:
+        type: boolean
+        example: true
+      low_traffic_mode_enabled:
+        type: boolean
+        example: true
+        description: Включён ли режим экономии трафика
+      low_traffic_mode_fpm:
+        type: integer
+        format: int32
+        example: 5
+        description: 4-12 кадров в минуту
+      low_traffic_mode_live:
+        type: boolean
+        example: true
+        description: Включён ли лайв в режиме экономии трафика
+      public_token:
+        type: string
+        example: f00b4r
+      public_index:
+        type: boolean
+        example: true
+        description: В публичном каталоге ли камера
+      short_link:
+        type: string
+        example: https://4you.vc/f00b4r
+      location:
+        $ref: '#/definitions/CameraLocation'
+      synchronization:
+        type: boolean
+      mp4_url:
+        type: string
+        description: Адрес mp4-стриммера
+      proto_https_url:
+        type: string
+        description: Адрес видео-потока (HTTPS-соединение)
+      screenshot:
+        $ref: '#/definitions/CameraScreenshots'
+      data_center:
+        $ref: '#/definitions/DataCenter'
+      streamer_token:
+        type: string
+        description: Токен для воспроизведения видео с камеры
+      cdn_token:
+        type: string
+        description: Токен для получения контента с cdn (например, файлов изображений)
+      utoken:
+        type: string
+        description: U-Токен, кука, которая выдается Умному Дому
+      share:
+        $ref: '#/definitions/CameraIndexShare'
+      favorite:
+        type: boolean
+        description: Камера в избранном
+      dvr_type:
+        type: string
+        enum:
+        - dvr
+        - vms
+        description: Тип регистратора(для остальных камер null)
+  CameraChannel:
+    type: object
+    properties:
+      uid:
+        type: string
+        description: UID канала
+      stream:
+        type: integer
+        format: int8
+        description: Поток.
+        enum:
+        - 0
+        - 1
+        - 2
+        default: 0
+  DataCenter:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int32
+        description: ID ЦОДа
+      name:
+        type: string
+        description: Название
+      baker:
+        type: string
+        description: Адрес бейкера
+  CameraMemoryCardState:
+    type: object
+    properties:
+      updated_at:
+        type: string
+        example: 2016-09-06T14:32:12Z
+        description: Дата обновления (ISO8601)
+      state:
+        type: string
+        description: Состояние
+        enum:
+        - Unknown
+        - CardOK
+        - CardNotFound
+        - CardInserted
+        - CardRemoved
+        - AccessError
+        - FreeSpaceShortage
+        - WriteTooSlow
+        - CardFailed
+        - CardFormatting
+      message:
+        type: string
+        description: Описание последнего события
+      capacity:
+        type: integer
+        format: int64
+        description: Всего места в байтах
+      used:
+        type: integer
+        format: int64
+        description: Занято места на видео в байтах
+      junk:
+        type: integer
+        format: int64
+        description: Занято места другими данными в байтах
+  response_err:
+    type: object
+    properties:
+      status:
+        type: string
+        default: error
+        example: error
+      messages:
+        type: object
+        $ref: '#/definitions/ErrorItems'
+  ErrorWithData:
+    type: object
+    properties:
+      status:
+        type: string
+        default: error
+        example: error
+      messages:
+        type: object
+        $ref: '#/definitions/ErrorItems'
+      data:
+        type: object
+        description: Дополнительные данные, может не быть.
+  ErrorItems:
+    type: object
+    required:
+    - field_name
+    properties:
+      field_name:
+        type: array
+        items:
+          $ref: '#/definitions/ErrorMessage'
+  ErrorMessage:
+    type: string
+    example: can't be blank
+  response_ok:
+    type: object
+    properties:
+      status:
+        type: string
+        example: ok
+  response_session:
+    type: object
+    properties:
+      status:
+        type: string
+        default: ok
+      id:
+        type: integer
+        format: int32
+      token:
+        type: string
+      ttl:
+        type: integer
+        format: int32
+        description: Фактически проставленное время сессии с учетом всех настроек (в т.ч. /admin/settings/ и `ttl_variance` из конфига session-store)
+  userSessionsIndexResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        default: ok
+      sessions:
+        type: array
+        items:
+          $ref: '#/definitions/UserSession'
+  UserSession:
+    type: object
+    required:
+    - id
+    - token
+    - device_name
+    - created_at
+    - updated_at
+    properties:
+      id:
+        type: integer
+        format: int32
+      token:
+        type: string
+      device_name:
+        type: string
+      created_at:
+        type: number
+        format: double
+      updated_at:
+        type: number
+        format: double
+      ip:
+        type: string
+      timezone:
+        type: string
+      locale:
+        type: string
+      screen_resolution:
+        type: string
+      screen_dpi:
+        type: string
+      platform:
+        type: string
+      os_version:
+        type: string
+      app_version:
+        type: string
+      device_model:
+        type: string
+      ttl:
+        type: integer
+        format: int32
+        description: Срок жизни сессии пользователя в секундах, целое число.
+  userCamerasIndexV3Response:
+    type: object
+    properties:
+      status:
+        type: string
+        enum:
+        - ok
+        - error
+        example: ok
+      page:
+        type: integer
+        format: int32
+      per_page:
+        type: integer
+        format: int32
+      total_pages:
+        type: integer
+        format: int32
+      total_count:
+        type: integer
+        format: int32
+      cameras:
+        type: array
+        items:
+          $ref: '#/definitions/CameraV3'
+  CameraScreenshots:
+    type: object
+    description: Урлы скриншотов разных размеров в JPG-формате
+    properties:
+      url_template:
+        type: string
+      precise_url_template:
+        type: string
+        description: >
+          Шаблон для "точных" скриншотов. Выдаёт скриншоты всех размеров, но только по таймстемпу. "last.jpg" выдавать не будет. Предназначена для получения скриншота текущего кадра трансляции: пользователю понравился кадр, он нажал на кнопку, скриншотик сохранился к нему в телефон или ещё куда-то.
+      direct_url_template:
+        type: string
+        description: Url для прямого взятия скриншотов с CDN
+      smart_url_template:
+        type: string
+  response_cameras_fragments_get:
+    type: object
+    properties:
+      status:
+        type: string
+        default: ok
+      fragments:
+        type: array
+        items:
+          $ref: '#/definitions/CameraFragment'
+  CameraFragment:
+    type: object
+    properties:
+      since:
+        type: number
+        format: double
+      till:
+        type: number
+        format: double
+  BakedArchive:
+    type: object
+    required:
+    - id
+    - status
+    properties:
+      id:
+        type: integer
+        format: int32
+      name:
+        type: string
+        description: имя архива
+      status:
+        type: integer
+        format: int32
+        description: Статус архива. STATUS_NEW = 0, STATUS_ENQUEUED = 1, STATUS_ERROR = 2, STATUS_DONE = 3
+      camera_count:
+        type: integer
+        format: int32
+        description: Уникальное количество камер
+      camera_uids:
+        type: array
+        items:
+          type: string
+        description: UID'ы камер
+      baked_files:
+        type: array
+        items:
+          $ref: '#/definitions/BakedFile'
+      since:
+        type: number
+        format: double
+        description: начало интервала
+      till:
+        type: number
+        format: double
+        description: окончание интервала
+      length:
+        type: integer
+        format: int32
+        description: длина архива в минутах
+      digest:
+        type: boolean
+        description: сжатие
+      digest_ratio:
+        type: number
+        format: double
+        description: фактор сжатия, от 0.0 до 1.0
+      events_only:
+        type: boolean
+      delete_permission:
+        type: boolean
+      created_at:
+        type: number
+        format: double
+      updated_at:
+        type: number
+        format: double
+  BakedFile:
+    type: object
+    required:
+    - id
+    - status
+    properties:
+      id:
+        type: integer
+        format: int32
+      camera_uid:
+        type: string
+        description: UID камеры
+      camera_name:
+        type: string
+        description: имя камеры
+      utc_offset:
+        type: integer
+        format: int32
+        description: Таймзона в минутах
+      cdn_token:
+        type: string
+        description: Токен для получения контента с cdn (например, файлов изображений)
+      data_center_baker:
+        type: string
+        description: Адрес бейкера
+      status:
+        type: integer
+        format: int32
+        description: Статус клипа. STATUS_NEW = 0, STATUS_ENQUEUED = 1, STATUS_ERROR = 2, STATUS_DONE = 3
+      since:
+        type: number
+        format: double
+        description: начало интервала
+      till:
+        type: number
+        format: double
+        description: окончание интервала
+      filename:
+        type: string
+        description: имя файла
+      download_filename:
+        type: string
+        description: имя файла для загрузки
+      screenshots:
+        type: object
+        description: хэш со скриншотами, может быть null
+        example:
+          .jpg: f1/fd/f1fd2b17-9dfc-46fd-b102-02bdc1dcd422-1478876700.0-1478876760.0-9e17c9620f078983262b9a6a496fb9ec-1478876952.jpg
+          .100.jpg: f1/fd/f1fd2b17-9dfc-46fd-b102-02bdc1dcd422-1478876700.0-1478876760.0-9e17c9620f078983262b9a6a496fb9ec-1478876952.100.jpg
+          .200.jpg: f1/fd/f1fd2b17-9dfc-46fd-b102-02bdc1dcd422-1478876700.0-1478876760.0-9e17c9620f078983262b9a6a496fb9ec-1478876952.200.jpg
+          .300.jpg: f1/fd/f1fd2b17-9dfc-46fd-b102-02bdc1dcd422-1478876700.0-1478876760.0-9e17c9620f078983262b9a6a496fb9ec-1478876952.300.jpg
+      length:
+        type: number
+        format: double
+        description: длина
+      digest:
+        type: boolean
+        description: сжатие
+      digest_ratio:
+        type: number
+        format: double
+        description: фактор сжатия, от 0.0 до 1.0
+      events_only:
+        type: boolean
+      created_at:
+        type: number
+        format: double
+      updated_at:
+        type: number
+        format: double
+      size:
+        type: integer
+        format: int32
+        description: размер
+  Role:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int32
+      name:
+        type: string
+        description: Имя группы
+      permissions:
+        type: array
+        description: Привилегии
+        items:
+          type: string
+      is_global:
+        type: boolean
+        description: Своя роль или общая
+  userBakedArchivesIndexResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        description: Статус ответа
+      offset:
+        type: integer
+        format: int32
+      limit:
+        type: integer
+        format: int32
+      total:
+        type: integer
+        format: int32
+      baked_archives:
+        type: array
+        items:
+          $ref: '#/definitions/BakedArchive'
+  SsoName:
+    type: string
+    enum:
+    - main
+    - hh_b2b
+    - hh_b2c
+    description: Внутренне название инстанса SSO
+  userCamerasTimeSettingsGetResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        description: Статус ответа
+      offset:
+        type: integer
+        format: int32
+        description: Смещение в минутах от UTC
+  serviceHealthResponse:
+    properties:
+      status:
+        type: string
+        enum:
+        - up
+        - maintenance
+        example: maintenance
+      message:
+        type: string
+        example: message
+  Oauth:
+    type: object
+    title: Oauth
+    required:
+    - provider
+    - uid
+    - info
+    properties:
+      provider:
+        type: string
+      uid:
+        type: string
+      info:
+        type: object
+        title: OauthInfo
+        properties:
+          name:
+            type: string
+  userProfileGetResponse:
+    type: object
+    properties:
+      user_id:
+        type: integer
+        format: int32
+        description: ID текущего пользователя
+      status:
+        type: string
+      login:
+        type: string
+      email:
+        type: string
+      email_confirmed:
+        type: boolean
+      email_change_to:
+        type: string
+      email_sso:
+        type: string
+      phone:
+        type: string
+      phone_confirmed:
+        type: boolean
+      phone_change_to:
+        type: string
+        description: Последний неподтверждённый телефон. Если такого нет, или код стух, то null.
+      first_name:
+        type: string
+      last_name:
+        type: string
+      realm:
+        type: string
+        description: Реалм
+      utc_offset:
+        type: integer
+        format: int32
+        description: Возвращает таймзону в минутах
+      map_available:
+        type: boolean
+      camboard_available:
+        type: boolean
+      cctv_client_available:
+        type: boolean
+      user_group:
+        description: Группа пользователя НОП
+        $ref: '#/definitions/ProfileUserGroup'
+      oauths:
+        type: array
+        items:
+          $ref: '#/definitions/Oauth'
+      recurrent_payments:
+        type: boolean
+        description: Включены ли автоплатежи
+      notify_payments:
+        type: boolean
+        description: Включено ли оповещение об оплате
+      role:
+        type: object
+        $ref: '#/definitions/Role'
+      available_roles:
+        type: array
+        items:
+          $ref: '#/definitions/Role'
+      push_mode:
+        type: integer
+        format: int8
+        enum:
+        - 0
+        - 1
+        description: >
+          Режим работы пуш-уведомлений. 0 = отправлять всё в мобилы, 1 = отправлять по расписанию.
+      enable_two_factor_auth:
+        type: boolean
+        description: Включена ли двухфакторная авторизация
+      support_allowed:
+        type: boolean
+        description: Разрешить доступ к аккаунту сотрудникам технической поддержки
+      support_user:
+        $ref: '#/definitions/ProfileUserSupportUser'
+        description: Данные о сотруднике технической поддержки, либо null.
+  ProfileUserGroup:
+    type: object
+    required:
+    - name
+    properties:
+      name:
+        type: string
+        description: Имя группы
+      is_owned:
+        type: boolean
+        description: Является ли пользователь владельцем
+      rrs:
+        type: boolean
+        description: Подключена ли аналитика РРС
+      masks:
+        type: boolean
+        description: Подключена ли аналитика по маскам
+      mail:
+        type: boolean
+        description: Подключена ли аналитика Почта России
+  ProfileUserSupportUser:
+    type: object
+    properties:
+      email:
+        type: string
+        description: Эл. почта сотрудника поддержки
+  CameraShareUser:
+    type: object
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+  ExtraTariff:
+    type: object
+    required:
+    - id
+    properties:
+      id:
+        type: integer
+        format: int32
+      slug:
+        type: string
+      prefix:
+        type: string
+      title:
+        type: string
+      price:
+        type: string
+      vat_included:
+        type: boolean
+      reseller_id:
+        description: ID реселлера.
+        format: int32
+        type: integer
+  userExtraTariffsIndexResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        enum:
+        - ok
+        - error
+        example: ok
+      extra_tariffs:
+        type: array
+        items:
+          $ref: '#/definitions/ExtraTariff'
+host: lk-b2b.camera.rt.ru

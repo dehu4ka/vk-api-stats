@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — RT Camera Monitor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Dashboard</h3>
+    <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+</div>
+
+<div id="stats-cards" hx-get="/api/stats" hx-trigger="every 60s" hx-swap="innerHTML">
+    {% include "partials/stats_cards.html" %}
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3">Online / Offline</h6>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="donutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3">Top vendors</h6>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="vendorChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3">
+                    <i class="bi bi-exclamation-triangle text-danger"></i>
+                    Offline cameras (longest)
+                </h6>
+                {% if summary.long_offline %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr>
+                            <th>Camera</th>
+                            <th>Vendor</th>
+                            <th>Offline Duration</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for cam, dur in summary.long_offline %}
+                            <tr>
+                                <td>
+                                    <a href="/cameras/{{ cam.uid }}" class="text-decoration-none">
+                                        {{ cam.name or cam.uid[:12] }}
+                                    </a>
+                                </td>
+                                <td><small class="text-muted">{{ cam.vendor or '-' }}</small></td>
+                                <td><span class="badge bg-danger">{{ format_duration(dur) }}</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-success mb-0"><i class="bi bi-check-circle"></i> No long offline cameras</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3">
+                    <i class="bi bi-sd-card text-warning"></i>
+                    Memory card issues
+                </h6>
+                {% if summary.memory_issues %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr>
+                            <th>Camera</th>
+                            <th>State</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for cam in summary.memory_issues %}
+                            <tr>
+                                <td>
+                                    <a href="/cameras/{{ cam.uid }}" class="text-decoration-none">
+                                        {{ cam.name or cam.uid[:12] }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">
+                                        {{ (cam.memory_card_state or {}).get('state', '?') }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-success mb-0"><i class="bi bi-check-circle"></i> No memory card issues</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const donutCtx = document.getElementById('donutChart').getContext('2d');
+    new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Online', 'Offline'],
+            datasets: [{
+                data: [{{ summary.online }}, {{ summary.offline }}],
+                backgroundColor: ['#198754', '#dc3545'],
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    const vendorLabels = [{% for name, _ in summary.top_vendors %}'{{ name }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const vendorOnline = [{% for _, v in summary.top_vendors %}{{ v.online }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const vendorOffline = [{% for _, v in summary.top_vendors %}{{ v.offline }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+    const vendorCtx = document.getElementById('vendorChart').getContext('2d');
+    new Chart(vendorCtx, {
+        type: 'bar',
+        data: {
+            labels: vendorLabels,
+            datasets: [
+                { label: 'Online', data: vendorOnline, backgroundColor: '#198754' },
+                { label: 'Offline', data: vendorOffline, backgroundColor: '#dc3545' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, beginAtZero: true }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

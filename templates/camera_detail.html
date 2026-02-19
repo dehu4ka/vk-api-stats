@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}{{ camera.name or camera.uid[:12] }} — RT Camera Monitor{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/cameras" class="text-decoration-none">Cameras</a></li>
+        <li class="breadcrumb-item active">{{ camera.name or camera.uid[:12] }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-4">
+    <h3 class="mb-0 me-3">{{ camera.name or 'Unnamed' }}</h3>
+    {% if camera.is_online %}
+        <span class="badge badge-online fs-6">Online</span>
+    {% else %}
+        <span class="badge badge-offline fs-6">Offline</span>
+    {% endif %}
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3"><i class="bi bi-info-circle"></i> Information</h6>
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><td class="text-muted" style="width:140px">UID</td><td><code>{{ camera.uid }}</code></td></tr>
+                    <tr><td class="text-muted">Serial Number</td><td>{{ camera.sn or '-' }}</td></tr>
+                    <tr><td class="text-muted">MAC</td><td><code>{{ camera.mac or '-' }}</code></td></tr>
+                    <tr><td class="text-muted">IP</td><td>{{ camera.ip or '-' }}</td></tr>
+                    <tr><td class="text-muted">Vendor</td><td>{{ camera.vendor or '-' }}</td></tr>
+                    <tr><td class="text-muted">Model</td><td>{{ camera.model or '-' }}</td></tr>
+                    <tr><td class="text-muted">Firmware</td><td><small>{{ camera.firmware_version or '-' }}</small></td></tr>
+                    <tr><td class="text-muted">Agent</td><td><small>{{ camera.agent_version or '-' }}</small></td></tr>
+                    <tr><td class="text-muted">Address</td><td>{{ camera.address or '-' }}</td></tr>
+                    <tr><td class="text-muted">Data Center</td><td>{{ (camera.data_center or {}).get('name', '-') }}</td></tr>
+                    <tr><td class="text-muted">UTC Offset</td><td>{{ camera.utc_offset // 60 if camera.utc_offset else 0 }} h</td></tr>
+                    <tr><td class="text-muted">Type</td><td>{{ camera.kind or '-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card stat-card mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3"><i class="bi bi-activity"></i> Status</h6>
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted" style="width:140px">Online</td>
+                        <td>
+                            {% if camera.is_online %}
+                                <span class="text-success"><i class="bi bi-check-circle-fill"></i> Yes</span>
+                            {% else %}
+                                <span class="text-danger"><i class="bi bi-x-circle-fill"></i> No</span>
+                                {% if camera.offline_since %}
+                                    <small class="text-muted ms-2">({{ format_duration(now - camera.offline_since) }})</small>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Alive</td>
+                        <td>
+                            {% if camera.is_alive %}
+                                <span class="text-success"><i class="bi bi-check-circle-fill"></i> Yes</span>
+                            {% else %}
+                                <span class="text-danger"><i class="bi bi-x-circle-fill"></i> No</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% set ss = camera.scheduled_state or {} %}
+                    <tr><td class="text-muted">Transmission</td><td>{{ ss.get('transmission', '-') }}</td></tr>
+                    <tr><td class="text-muted">Recording</td><td>{{ ss.get('recording', '-') }}</td></tr>
+                    <tr><td class="text-muted">Motion Det.</td><td>{{ ss.get('motion_detection', '-') }}</td></tr>
+                    <tr><td class="text-muted">Microphone</td><td>{{ ss.get('microphone', '-') }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        {% set mc = camera.memory_card_state or {} %}
+        {% if mc.get('state') %}
+        <div class="card stat-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-3"><i class="bi bi-sd-card"></i> Memory Card</h6>
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted" style="width:140px">State</td>
+                        <td>
+                            {% if mc.state == 'CardOK' %}
+                                <span class="badge bg-success">{{ mc.state }}</span>
+                            {% elif mc.state == 'CardNotFound' %}
+                                <span class="badge bg-secondary">{{ mc.state }}</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">{{ mc.state }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if mc.capacity %}
+                    <tr>
+                        <td class="text-muted">Capacity</td>
+                        <td>{{ (mc.capacity / 1073741824) | round(1) }} GB</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Used</td>
+                        <td>
+                            {% set pct = (mc.used / mc.capacity * 100) | round(1) if mc.capacity else 0 %}
+                            <div class="progress" style="height: 16px;">
+                                <div class="progress-bar {% if pct > 90 %}bg-danger{% elif pct > 70 %}bg-warning{% else %}bg-success{% endif %}"
+                                     style="width: {{ pct }}%">{{ pct }}%</div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card stat-card mb-4">
+    <div class="card-body">
+        <h6 class="card-title text-muted mb-3"><i class="bi bi-film"></i> Archive Integrity</h6>
+
+        {% if archive.total_fragments > 0 %}
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-3 text-center h-100">
+                    <div class="text-muted small">Depth</div>
+                    <div class="fs-4 fw-bold">{{ archive.depth_days }} d</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-3 text-center h-100">
+                    <div class="text-muted small">Fragments</div>
+                    <div class="fs-4 fw-bold">{{ archive.total_fragments }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-3 text-center h-100">
+                    <div class="text-muted small">Coverage</div>
+                    <div class="fs-4 fw-bold {% if archive.coverage_pct >= 90 %}text-success{% elif archive.coverage_pct >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ archive.coverage_pct }}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-3 text-center h-100">
+                    <div class="text-muted small">Avg fragment</div>
+                    <div class="fs-4 fw-bold">{{ format_duration(archive.avg_fragment) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Recorded</span>
+                    <span class="fw-medium text-body">{{ format_duration(archive.total_recorded) }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Gaps &gt; 1 min</span>
+                    <span class="fw-medium {% if archive.gaps_count == 0 %}text-success{% else %}text-body{% endif %}">
+                        {{ archive.gaps_count }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Max gap</span>
+                    <span class="fw-medium {% if archive.max_gap > 3600 %}text-danger{% elif archive.max_gap > 300 %}text-warning{% else %}text-success{% endif %}">
+                        {{ format_duration(archive.max_gap) if archive.max_gap else '-' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="text-muted mb-3">Daily breakdown</h6>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 100px">Date</th>
+                        <th style="min-width: 260px">Timeline (24h)</th>
+                        <th class="text-end">Recorded</th>
+                        <th class="text-end">Coverage</th>
+                        <th class="text-end">Frags</th>
+                        <th class="text-end">Gaps</th>
+                        <th class="text-end">Max gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for day in archive.daily %}
+                    <tr>
+                        <td class="fw-medium text-nowrap">{{ day.date }}</td>
+                        <td>
+                            <div class="timeline-bar" style="height: 18px;">
+                                {% for seg in day.timeline %}
+                                <div class="timeline-fragment" style="left:{{ seg.left }}%; width:{{ seg.width }}%;" title="{{ seg.title }}"></div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="text-end text-nowrap">{{ day.recorded_h }} h</td>
+                        <td class="text-end text-nowrap">
+                            <span class="badge {% if day.coverage_pct >= 90 %}bg-success{% elif day.coverage_pct >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                {{ day.coverage_pct }}%
+                            </span>
+                        </td>
+                        <td class="text-end">{{ day.fragments }}</td>
+                        <td class="text-end">
+                            {% if day.gaps_count > 0 %}
+                                <span class="text-warning">{{ day.gaps_count }}</span>
+                            {% else %}
+                                <span class="text-success">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">
+                            {% if day.max_gap > 0 %}
+                                <span class="{% if day.max_gap > 3600 %}text-danger{% elif day.max_gap > 300 %}text-warning{% else %}text-muted{% endif %}">
+                                    {{ format_duration(day.max_gap) }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> No archive data found (checked last 90 days)</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
