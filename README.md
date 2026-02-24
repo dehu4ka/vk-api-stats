@@ -33,9 +33,11 @@ source .venv/bin/activate
 # Установить зависимости
 uv pip install -r requirements.txt
 
-# Запустить веб-портал
-python app.py
-# → http://localhost:5000
+# Запустить веб-портал (development, с debug)
+python app.py --debug
+
+# Запустить в production (gunicorn, 0.0.0.0:5000)
+gunicorn -b 0.0.0.0:5000 "app:create_app()"
 
 # Сгенерировать Excel-отчёт
 python report.py
